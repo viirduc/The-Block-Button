@@ -1,0 +1,23 @@
+{
+    "name": "Roblox Trade Block Button",
+    "short_name": "Block Button",
+    "description": "For when simply declining the trade isn't enough.",
+    "author": "dxzys",
+    "version": "1.0",
+    "permissions": ["activeTab", "storage", "cookies"],
+    "host_permissions": ["https://*.roblox.com/*"],
+    "background": {
+      "service_worker": "background.js"
+    },
+    "content_scripts": [
+      {
+        "matches": ["*://*.roblox.com/trades*"],
+        "js": ["content.js"]
+      }
+    ],
+    "icons": {
+      "48": "icons/48.png",
+      "128": "icons/128.png"
+    },
+    "manifest_version": 3
+  }
