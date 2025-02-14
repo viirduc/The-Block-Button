@@ -4,42 +4,27 @@ function button() {
         const blockButton = document.createElement('button');
         blockButton.textContent = 'Block';
         blockButton.className = 'btn-control-md blockButton';
+
         Object.assign(blockButton.style, {
-            backgroundColor: 'rgb(247, 75, 82)',
+            backgroundColor: '#F44336',
             color: 'white',
-            borderBottomColor: 'rgb(247, 75, 82)',
-            borderBottomLeftRadius: '8px',
-            borderBottomRightRadius: '8px',
-            borderBottomStyle: 'solid',
-            borderBottomWidth: '1px',
-            borderLeftColor: 'rgb(247, 75, 82)',
-            borderLeftStyle: 'solid',
-            borderLeftWidth: '1px',
-            borderRightColor: 'rgb(247, 75, 82)',
-            borderRightStyle: 'solid',
-            borderRightWidth: '1px',
-            borderTopColor: 'rgb(247, 75, 82)',
-            borderTopLeftRadius: '8px',
-            borderTopRightRadius: '8px',
-            borderTopStyle: 'solid',
-            borderTopWidth: '1px',
+            borderColor: '#F44336',
+            borderradius: '4px',
             cursor: 'pointer',
-            display: 'inline-block',
-            fontFamily: '"Builder Sans", sans-serif',
-            fontSize: '16px',
-            fontWeight: '500',
-            height: '36px',
-            marginBottom: '5px',
-            marginLeft: '0px',
-            marginRight: '12px',
-            marginTop: '0px',
-            padding: '9px',
-            textAlign: 'center',
-            verticalAlign: 'middle',
-            width: '71.5156px',
-            '-webkit-font-smoothing': 'antialiased',
         });
+
+        // hover
+        blockButton.onmouseenter = () => {
+            blockButton.style.backgroundColor = '#D32F2F';
+            blockButton.style.borderColor = '#D32F2F';
+        };
+        blockButton.onmouseleave = () => {
+            blockButton.style.backgroundColor = '#F44336';
+            blockButton.style.borderColor = '#F44336';
+        };
+
         blockButton.onclick = blockConfirmation;
+
         tradeButtons.appendChild(blockButton);
     }
 }
@@ -72,9 +57,47 @@ function blockConfirmation() {
     const modalContainer = document.createElement('div');
     modalContainer.innerHTML = modalHtml;
     document.body.appendChild(modalContainer);
+
     document.getElementById('confirmBlockButton').onclick = block;
     document.getElementById('cancelBlockButton').onclick = close;
     modalContainer.querySelector('.close').onclick = close;
+}
+
+function showRobloxAlert(title, message, isSuccess = true) {
+    const modalHtml = `
+        <div role="dialog">
+            <div class="modal-backdrop in"></div>
+            <div role="dialog" tabindex="-1" class="in modal" style="display: block;">
+                <div class="modal-window modal-sm modal-dialog">
+                    <div class="modal-content" role="document">
+                        <div class="modal-header">
+                            <button type="button" class="close" title="close"><span class="icon-close"></span></button>
+                            <h4 class="modal-title">${title}</h4>
+                        </div>
+                        <div class="modal-body">${message}</div>
+                        <div class="modal-footer">
+                            <div class="modal-buttons">
+                                <button type="button" class="modal-button btn-primary-md btn-min-width" id="confirmAlertButton">OK</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = modalHtml;
+    document.body.appendChild(modalContainer);
+
+    const confirmButton = document.getElementById('confirmAlertButton');
+    confirmButton.onclick = () => {
+        modalContainer.remove();
+    };
+
+    modalContainer.querySelector('.close').onclick = () => {
+        modalContainer.remove();
+    };
 }
 
 function close() {
@@ -83,7 +106,11 @@ function close() {
 
 async function block() {
     const { userId, tradeId } = getTradeDetails();
-    if (!userId || !tradeId) return alert('User ID or Trade ID not found.');
+    if (!userId || !tradeId) {
+        showRobloxAlert('Error', 'User ID or Trade ID not found.', false);
+        return;
+    }
+
     try {
         const [csrf, cookie] = await Promise.all([get('csrf'), get('cookie')]);
         const blockResponse = await fetch(`https://apis.roblox.com/user-blocking-api/v1/users/${userId}/block-user`, {
@@ -95,8 +122,10 @@ async function block() {
             },
             credentials: 'include'
         });
+
         if (blockResponse.ok) {
-            alert('User blocked successfully.');
+            showRobloxAlert('Success', 'User blocked successfully.', true);
+
             await fetch(`https://trades.roblox.com/v1/trades/${tradeId}/decline`, {
                 method: 'POST',
                 headers: {
@@ -108,13 +137,14 @@ async function block() {
             });
         } else {
             const blockErrorData = await blockResponse.json();
-            alert(`Failed to block user: ${blockErrorData.errors[0].userFacingMessage}`);
+            showRobloxAlert('Error', `Failed to block user: ${blockErrorData.errors[0].userFacingMessage}`, false);
         }
     } catch (error) {
         console.error('Error blocking user or declining trade:', error);
-        alert('An error occurred while trying to block the user.');
+        showRobloxAlert('Error', 'An error occurred while trying to block the user.', false);
+    } finally {
+        close();
     }
-    close();
 }
 
 function getTradeDetails() {
